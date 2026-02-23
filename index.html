@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart 3D + Flowers</title>
+
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Cœur 3D */
+        .heart-3d {
+            width: 150px;
+            height: 150px;
+            background: red;
+            position: absolute;
+            transform: rotate(-45deg);
+            animation: beat 1s infinite ease-in-out, rotate3d 6s infinite linear;
+            filter: drop-shadow(0 0 20px red);
+        }
+
+        .heart-3d::before,
+        .heart-3d::after {
+            content: "";
+            width: 150px;
+            height: 150px;
+            background: red;
+            border-radius: 50%;
+            position: absolute;
+        }
+
+        .heart-3d::before {
+            top: -75px;
+            left: 0;
+        }
+
+        .heart-3d::after {
+            left: 75px;
+            top: 0;
+        }
+
+        @keyframes beat {
+            0% { transform: scale(1) rotate(-45deg); }
+            50% { transform: scale(1.2) rotate(-45deg); }
+            100% { transform: scale(1) rotate(-45deg); }
+        }
+
+        @keyframes rotate3d {
+            0% { transform: rotate(-45deg) rotateY(0deg); }
+            100% { transform: rotate(-45deg) rotateY(360deg); }
+        }
+
+        /* Canvas pour fleurs + explosions */
+        #explosionCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="heart-3d"></div>
+<canvas id="explosionCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById("explosionCanvas");
+const ctx = canvas.getContext("2d");
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resize();
+window.onresize = resize;
+
+// FLEURS QUI POUSSENT
+const flowers = [];
+
+function spawnFlower() {
+    const x = window.innerWidth / 2 + (Math.random() * 300 - 150);
+    const y = window.innerHeight / 2 + (Math.random() * 300 - 150);
+
+    flowers.push({
+        x,
+        y,
+        size: 0,
+        maxSize: 20 + Math.random() * 20,
+        exploded: false
+    });
+}
+
+setInterval(spawnFlower, 600);
+
+// EXPLOSION FEU D’ARTIFICE
+const particles = [];
+
+function explodeFlower(flower) {
+    for (let i = 0; i < 40; i++) {
+        particles.push({
+            x: flower.x,
+            y: flower.y,
+            angle: Math.random() * Math.PI * 2,
+            speed: Math.random() * 4 + 2,
+            size: Math.random() * 3 + 1,
+            alpha: 1,
+            color: `hsl(${Math.random() * 360}, 100%, 60%)`
+        });
+    }
+}
+
+function updateParticles() {
+    particles.forEach((p, i) => {
+        p.x += Math.cos(p.angle) * p.speed;
+        p.y += Math.sin(p.angle) * p.speed;
+        p.alpha -= 0.02;
+        if (p.alpha <= 0) particles.splice(i, 1);
+    });
+}
+
+function drawParticles() {
+    particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.alpha;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+}
+
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    flowers.forEach((f, i) => {
+        if (!f.exploded) {
+            f.size += 0.5;
+            if (f.size >= f.maxSize) {
+                f.exploded = true;
+                explodeFlower(f);
+                flowers.splice(i, 1);
+            }
+        }
+
+        ctx.fillStyle = "pink";
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    updateParticles();
+    drawParticles();
+
+    requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+
+</body>
+</html>
